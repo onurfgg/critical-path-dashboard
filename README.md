@@ -6,31 +6,31 @@
 ![Vis.js](https://img.shields.io/badge/Vis.js-Network_Graph-blue?style=for-the-badge)
 ![Industrial Engineering](https://img.shields.io/badge/Industrial_Engineering-Operations_Research-10b981?style=for-the-badge)
 
-**CPM Analyzer**, proje yönetimi ve yöneylem araştırması (Operations Research) prensiplerine dayalı olarak geliştirilmiş interaktif bir Karar Destek Sistemidir (Decision Support System). Kullanıcı tarafından girilen aktivitelerin sürelerini ve bağımlılıklarını analiz ederek projenin **Kritik Yolunu (Critical Path)** hesaplar ve sonuçları Çizge Teorisi (Graph Theory) kurallarına göre ekrana çizer.
+**CPM Analyzer** is an interactive Decision Support System (DSS) developed based on project management and Operations Research principles. By analyzing the durations and dependencies of user-inputted activities, it calculates the project's **Critical Path** and visualizes the results on the screen according to Graph Theory rules.
 
-🔗 **[Canlı Simülasyonu İncele (Live Demo)](https://onurfgg.github.io/BU_KİSMA_REPO_ADINI_YAZ)**
+🔗 **[Explore Live Simulation (Live Demo)](https://onurfgg.github.io/critical-path-dashboard)**
 
-## 📊 Matematiksel Altyapı ve Metodoloji
+## 📊 Mathematical Background & Methodology
 
-Bu araç, arka planda karmaşık ağ topolojilerini çözmek için özel bir JavaScript algoritması kullanır. Sistem şu aşamaları takip eder:
+This tool uses a custom JavaScript algorithm in the background to solve complex network topologies. The system follows these stages:
 
-1. **İleri Geçiş (Forward Pass):** Her aktivitenin En Erken Başlama (ES) ve En Erken Bitiş (EF) sürelerini hesaplar.
-2. **Geri Geçiş (Backward Pass):** Ağın sonundan başına doğru ilerleyerek En Geç Başlama (LS) ve En Geç Bitiş (LF) sürelerini bulur.
-3. **Bolluk (Slack) Hesabı:** Aktivitelerin gecikme toleranslarını belirler. Slack değeri 0 olan düğümler **Kritik Yol** üzerinde kabul edilir.
-4. **Döngü Koruması (Cyclic Graph Protection):** Algoritma, kullanıcının yanlışlıkla kısırdöngü yaratan öncüller (A -> B ve B -> A) girmesini engeller.
+1. **Forward Pass:** Calculates the Earliest Start (ES) and Earliest Finish (EF) times for each activity to determine the minimum project completion time.
+2. **Backward Pass:** Moves from the end to the beginning of the network to find the Latest Start (LS) and Latest Finish (LF) times.
+3. **Slack Calculation:** Determines the delay tolerances of the activities. Nodes with a slack value of 0 are considered on the **Critical Path**.
+4. **Cyclic Graph Protection:** The algorithm prevents the user from accidentally entering predecessors that create an infinite loop (e.g., A -> B and B -> A).
 
-## 🌟 Öne Çıkan Özellikler (Features)
+## 🌟 Highlighted Features
 
-* **Dinamik Veri Girişi:** İstenilen sayıda aktivite (Node) eklenebilir, süre ve öncül (Predecessor) bağımlılıkları tanımlanabilir.
-* **Özel SVG Düğüm Motoru:** Sektör standardı olan Vis.js kütüphanesi kullanılarak her bir düğüm için özel vektörel (SVG) kutular oluşturulur. Bu kutular tıpkı akademik kitaplardaki gibi aktivitenin 4 köşesinde ES, EF, LS ve LF değerlerini barındırır.
-* **Görsel Kritik Yol Haritası:** Projenin darboğazını oluşturan kritik yol, ağ üzerinde kırmızı oklarla (Edge) ve kırmızı düğümlerle otomatik olarak vurgulanır.
-* **Auto-Fit ve Pan-Zoom:** Büyük projelerde ağ haritası otomatik olarak ekrana sığdırılır (Auto-fit) ve kullanıcı farenin tekerleği ile harita üzerinde gezinebilir.
-* **Detaylı Analiz Tablosu:** Tüm veriler okunabilir bir matris tablosuna dökülür.
+* **Dynamic Data Entry:** Any number of activities (Nodes) can be added, and duration and predecessor dependencies can be dynamically defined.
+* **Custom SVG Node Engine:** Using the industry-standard Vis.js library, custom vector (SVG) boxes are generated for each node. These boxes contain the ES, EF, LS, and LF values in the 4 corners of the activity, perfectly mirroring academic textbooks.
+* **Visual Critical Path Map:** The critical path that creates the project's bottleneck is automatically highlighted with red arrows (Edges) and red nodes on the interactive network map.
+* **Auto-Fit and Pan-Zoom:** In large-scale projects, the network map automatically fits the screen constraints (Auto-fit), and the user can navigate or zoom the map smoothly.
+* **Detailed Analysis Table:** All calculated values are formatted into a readable matrix table.
 
-## ⚙️ Kurulum ve Kullanım (How to Use)
+## ⚙️ Installation and Usage
 
-Proje %100 "Client-Side" (İstemci Taraflı) çalışmaktadır. Herhangi bir sunucu kurulumuna gerek yoktur.
+The project runs 100% "Client-Side". No server installation or backend configuration is required.
 
-1. Repoyu bilgisayarınıza klonlayın:
+1. Clone the repository to your local machine:
    ```bash
    git clone [https://github.com/onurfgg/BU_KISMA_REPO_ADINI_YAZ.git](https://github.com/onurfgg/BU_KISMA_REPO_ADINI_YAZ.git)
