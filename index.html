@@ -6,10 +6,11 @@
     <title>Critical Path Method (CPM) Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
         :root {
-            --primary: #3b82f6;
-            --primary-dark: #1d4ed8;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
             --bg-dark: #0f172a; 
             --card-bg: rgba(30, 41, 59, 0.85);
             --glass-border: rgba(255, 255, 255, 0.1);
@@ -17,7 +18,7 @@
             --text-muted: #94a3b8; 
             --accent: #10b981; 
             --danger: #ef4444;
-            --critical: #f59e0b;
+            --critical: #ef4444; /* Fotoğraftaki gibi kırmızı kritik yol */
         }
 
         * { box-sizing: border-box; }
@@ -30,33 +31,44 @@
             background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
             color: var(--text-main); 
             display: flex; justify-content: center; align-items: flex-start;
-            min-height: 100vh; padding: 40px 20px; overflow-x: hidden;
+            min-height: 100vh; padding: 60px 20px; overflow-x: hidden;
         }
+
+        /* --- KİŞİSEL LİNKLER --- */
+        .social-links {
+            position: absolute; top: 20px; left: 20px;
+            display: flex; gap: 15px; z-index: 100;
+        }
+        .social-links a {
+            color: var(--text-muted); font-size: 24px; transition: 0.3s;
+        }
+        .social-links a:hover { color: var(--primary); transform: scale(1.1); }
 
         .container {
             background: var(--card-bg); border: 1px solid var(--glass-border);
-            width: 100%; max-width: 800px; border-radius: 16px; padding: 40px 30px;
+            width: 100%; max-width: 900px; border-radius: 16px; padding: 40px 30px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(20px);
         }
 
         .header { text-align: center; margin-bottom: 30px; }
-        .header i { font-size: 42px; color: var(--primary); margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.4));}
+        .header i { font-size: 42px; color: var(--primary); margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.4));}
         .header h1 { margin: 0 0 10px 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px;}
         .header p { margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.6;}
 
         /* Görev Giriş Paneli */
-        .task-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+        .task-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; max-height: 400px; overflow-y: auto; padding-right: 5px;}
         .task-row {
             display: grid; grid-template-columns: 1fr 1fr 2fr auto; gap: 10px;
             background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border);
-            align-items: center;
+            align-items: center; transition: 0.2s;
         }
+        .task-row:hover { border-color: rgba(255,255,255,0.3); }
         
         .input-group { display: flex; flex-direction: column; gap: 5px; }
         .input-group label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;}
         .input-field {
             padding: 10px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            border-radius: 8px; font-size: 14px; font-weight: 600; color: white; outline: none; font-family: 'Inter';
+            border-radius: 8px; font-size: 14px; font-weight: 600; color: white; outline: none; font-family: 'Inter'; text-transform: uppercase;
         }
         .input-field:focus { border-color: var(--primary); }
 
@@ -72,21 +84,28 @@
             flex: 1; background: transparent; color: var(--primary); border: 1px dashed var(--primary);
             padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.3s;
         }
-        .btn-add:hover { background: rgba(59, 130, 246, 0.1); }
+        .btn-add:hover { background: rgba(99, 102, 241, 0.1); }
         
         .btn-calc {
             flex: 2; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white;
             border: none; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer;
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3); transition: 0.3s; text-transform: uppercase;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3); transition: 0.3s; text-transform: uppercase;
         }
-        .btn-calc:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(59, 130, 246, 0.5); }
+        .btn-calc:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(99, 102, 241, 0.5); }
 
         /* Sonuç Paneli */
         #result-panel { display: none; flex-direction: column; gap: 20px; border-top: 1px solid var(--glass-border); padding-top: 30px; animation: slideDown 0.5s ease forwards; }
 
+        /* AĞ ÇİZGESİ (GRAPH) ALANI */
+        #network-canvas {
+            width: 100%; height: 350px; background: rgba(0,0,0,0.4); 
+            border-radius: 12px; border: 1px solid var(--glass-border);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
         .summary-card {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(0,0,0,0.4));
-            border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 25px;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(0,0,0,0.4));
+            border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 25px;
             display: flex; justify-content: space-between; align-items: center;
         }
         .summary-info h3 { margin: 0 0 5px 0; font-size: 14px; color: var(--text-muted); text-transform: uppercase;}
@@ -98,12 +117,12 @@
         .data-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
         .data-table th { background: rgba(255,255,255,0.05); padding: 15px 10px; color: var(--text-muted); font-weight: 700; border-bottom: 1px solid var(--glass-border); text-transform: uppercase; font-size: 11px;}
         .data-table td { padding: 15px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600; font-family: monospace; font-size: 14px;}
-        .data-table tr.critical-row { background: rgba(245, 158, 11, 0.05); }
+        .data-table tr.critical-row { background: rgba(239, 68, 68, 0.05); }
         .data-table tr.critical-row td { color: var(--critical); }
         
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; font-family: 'Inter';}
-        .badge.crit { background: rgba(245, 158, 11, 0.2); color: var(--critical); }
-        .badge.norm { background: rgba(16, 185, 129, 0.1); color: var(--accent); }
+        .badge.crit { background: rgba(239, 68, 68, 0.2); color: var(--critical); }
+        .badge.norm { background: rgba(59, 130, 246, 0.1); color: var(--primary); }
 
         @keyframes slideDown { 0% { opacity: 0; transform: translateY(-20px); } 100% { opacity: 1; transform: translateY(0); } }
         
@@ -111,75 +130,37 @@
             .task-row { grid-template-columns: 1fr 1fr; }
             .btn-remove { grid-column: span 2; width: 100%; margin-top: 5px;}
             .summary-card { flex-direction: column; text-align: center; gap: 15px; }
+            .social-links { position: relative; top: 0; left: 0; justify-content: center; margin-bottom: 20px;}
         }
     </style>
 </head>
 <body>
 
+    <div class="social-links">
+        <a href="https://linkedin.com/in/onurfurkan" target="_blank" title="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+        <a href="https://github.com/onurfgg" target="_blank" title="GitHub"><i class="fa-brands fa-github"></i></a>
+    </div>
+
     <div class="container">
         
         <div class="header">
-            <i class="fa-solid fa-diagram-project"></i>
-            <h1>Kritik Yol (CPM) Analiz Paneli</h1>
-            <p>Projenizdeki darboğazları ve esneklikleri (slack) bulmak için aktiviteleri ve birbirlerine olan bağlılıklarını (öncüllerini) girin.</p>
+            <i class="fa-solid fa-project-diagram"></i>
+            <h1>Ağ Görselleştirmeli CPM Analizi</h1>
+            <p>Proje yönetiminde düğümleri (node) hesaplayın. Algoritma dar boğazları bulur ve çizge teorisiyle ekrana çizer.</p>
         </div>
 
         <div class="task-list" id="task-container">
-            <div class="task-row">
-                <div class="input-group">
-                    <label>Aktivite ID</label>
-                    <input type="text" class="input-field task-id" placeholder="Örn: A" value="A">
-                </div>
-                <div class="input-group">
-                    <label>Süre</label>
-                    <input type="number" class="input-field task-dur" placeholder="Süre" value="5" min="0">
-                </div>
-                <div class="input-group">
-                    <label>Öncüller (Virgülle ayırın)</label>
-                    <input type="text" class="input-field task-pred" placeholder="Yoksa boş bırakın">
-                </div>
-                <button class="btn-remove" onclick="this.parentElement.remove()" title="Sil"><i class="fa-solid fa-trash"></i></button>
             </div>
-            
-            <div class="task-row">
-                <div class="input-group">
-                    <label>Aktivite ID</label>
-                    <input type="text" class="input-field task-id" value="B">
-                </div>
-                <div class="input-group">
-                    <label>Süre</label>
-                    <input type="number" class="input-field task-dur" value="3" min="0">
-                </div>
-                <div class="input-group">
-                    <label>Öncüller</label>
-                    <input type="text" class="input-field task-pred" value="A">
-                </div>
-                <button class="btn-remove" onclick="this.parentElement.remove()"><i class="fa-solid fa-trash"></i></button>
-            </div>
-
-            <div class="task-row">
-                <div class="input-group">
-                    <label>Aktivite ID</label>
-                    <input type="text" class="input-field task-id" value="C">
-                </div>
-                <div class="input-group">
-                    <label>Süre</label>
-                    <input type="number" class="input-field task-dur" value="6" min="0">
-                </div>
-                <div class="input-group">
-                    <label>Öncüller</label>
-                    <input type="text" class="input-field task-pred" value="A, B">
-                </div>
-                <button class="btn-remove" onclick="this.parentElement.remove()"><i class="fa-solid fa-trash"></i></button>
-            </div>
-        </div>
 
         <div class="action-buttons">
-            <button class="btn-add" onclick="addTaskRow()"><i class="fa-solid fa-plus"></i> Yeni Aktivite Ekle</button>
-            <button class="btn-calc" onclick="processCPM()">Ağı Çözümle <i class="fa-solid fa-play"></i></button>
+            <button class="btn-add" onclick="addTaskRow()"><i class="fa-solid fa-plus"></i> Aktivite Ekle</button>
+            <button class="btn-calc" onclick="processCPM()">Ağı Çözümle ve Çiz <i class="fa-solid fa-play"></i></button>
         </div>
 
         <div id="result-panel">
+            
+            <div id="network-canvas"></div>
+
             <div class="summary-card">
                 <div class="summary-info">
                     <h3>Toplam Proje Süresi</h3>
@@ -205,8 +186,7 @@
                             <th>Durum</th>
                         </tr>
                     </thead>
-                    <tbody id="table-body">
-                        </tbody>
+                    <tbody id="table-body"></tbody>
                 </table>
             </div>
         </div>
@@ -214,51 +194,71 @@
     </div>
 
     <script>
-        // Yeni aktivite satırı ekler
-        function addTaskRow() {
+        // Fotoğraftaki orijinal ağ yapısı (A'dan L'ye)
+        const defaultNetwork = [
+            { id: 'A', dur: 4, pred: '' },
+            { id: 'B', dur: 5, pred: 'A' },
+            { id: 'C', dur: 2, pred: 'B' },
+            { id: 'D', dur: 3, pred: 'C' },
+            { id: 'F', dur: 4, pred: 'B' },
+            { id: 'G', dur: 5, pred: 'F' },
+            { id: 'H', dur: 4, pred: 'G' },
+            { id: 'I', dur: 8, pred: 'F' },
+            { id: 'J', dur: 3, pred: 'G, I' },
+            { id: 'K', dur: 7, pred: 'D' },
+            { id: 'L', dur: 2, pred: 'J' },
+            { id: 'E', dur: 2, pred: 'H, K, L' }
+        ];
+
+        // Sayfa yüklendiğinde varsayılan düğümleri ekrana bas
+        window.onload = () => {
             const container = document.getElementById('task-container');
+            defaultNetwork.forEach(task => {
+                container.appendChild(createRowHTML(task.id, task.dur, task.pred));
+            });
+        };
+
+        function createRowHTML(id = '', dur = '', pred = '') {
             const row = document.createElement('div');
             row.className = 'task-row';
             row.innerHTML = `
                 <div class="input-group">
                     <label>Aktivite ID</label>
-                    <input type="text" class="input-field task-id" placeholder="Örn: D">
+                    <input type="text" class="input-field task-id" value="${id}">
                 </div>
                 <div class="input-group">
                     <label>Süre</label>
-                    <input type="number" class="input-field task-dur" placeholder="Süre" min="0">
+                    <input type="number" class="input-field task-dur" value="${dur}" min="0">
                 </div>
                 <div class="input-group">
-                    <label>Öncüller (Virgülle)</label>
-                    <input type="text" class="input-field task-pred" placeholder="Örn: A, B">
+                    <label>Öncüller</label>
+                    <input type="text" class="input-field task-pred" value="${pred}">
                 </div>
                 <button class="btn-remove" onclick="this.parentElement.remove()" title="Sil"><i class="fa-solid fa-trash"></i></button>
             `;
-            container.appendChild(row);
+            return row;
         }
 
-        // Çizge (Graph) algoritması
+        function addTaskRow() {
+            document.getElementById('task-container').appendChild(createRowHTML());
+        }
+
+        // --- MATEMATİKSEL ALGORİTMA (CPM) ---
         function calculateCPM(activities) {
             let completedForward = 0;
-            let loopCounter = 0;
 
             // 1. İLERİ GEÇİŞ (Forward Pass)
             while (completedForward < activities.length) {
                 let progressed = false;
-                
                 activities.forEach(task => {
                     if (task.ef !== undefined) return; 
-                    
                     let canStart = true;
                     let maxEf = 0;
                     
                     for (let predId of task.predecessors) {
                         let pred = activities.find(a => a.id === predId);
                         if (!pred) throw new Error(`'${task.id}' için belirtilen '${predId}' öncülü bulunamadı!`);
-                        if (pred.ef === undefined) {
-                            canStart = false; 
-                            break;
-                        }
+                        if (pred.ef === undefined) { canStart = false; break; }
                         if (pred.ef > maxEf) maxEf = pred.ef; 
                     }
                     
@@ -269,17 +269,13 @@
                         progressed = true;
                     }
                 });
-
-                // Sonsuz döngü (Cyclic Graph) koruması
-                if (!progressed) throw new Error("Ağda mantıksal bir döngü (kısırdöngü) tespit edildi. Lütfen öncülleri kontrol edin.");
+                if (!progressed) throw new Error("Ağda mantıksal bir döngü tespit edildi!");
             }
 
             const projectDuration = Math.max(...activities.map(a => a.ef));
 
             // 2. GERİ GEÇİŞ (Backward Pass)
             let completedBackward = 0;
-            
-            // Uç düğümleri bul ve LF değerlerini proje süresi yap
             activities.forEach(task => {
                 let isPredecessor = activities.some(a => a.predecessors.includes(task.id));
                 if (!isPredecessor) {
@@ -292,7 +288,6 @@
             while (completedBackward < activities.length) {
                 activities.forEach(task => {
                     if (task.lf !== undefined) return;
-
                     let successors = activities.filter(a => a.predecessors.includes(task.id));
                     let allSuccessorsCalculated = successors.every(s => s.ls !== undefined);
 
@@ -316,7 +311,53 @@
             return { totalDuration: projectDuration, criticalPath: criticalPath, detailedNodes: activities };
         }
 
-        // DOM Verilerini Al ve Algoritmayı Çalıştır
+        // --- GÖRSELLEŞTİRME (VIS.JS) ---
+        function drawNetworkGraph(activities) {
+            const nodesArray = [];
+            const edgesArray = [];
+
+            activities.forEach(task => {
+                // Düğümleri Oluştur
+                nodesArray.push({
+                    id: task.id,
+                    label: `${task.id}\n(${task.duration})`,
+                    color: {
+                        background: task.isCritical ? '#ef4444' : '#6366f1',
+                        border: task.isCritical ? '#b91c1c' : '#4f46e5'
+                    },
+                    font: { color: '#ffffff', face: 'Inter', bold: true },
+                    shape: 'circle',
+                    borderWidth: 2
+                });
+
+                // Okları (Edge) Oluştur
+                task.predecessors.forEach(predId => {
+                    let predNode = activities.find(a => a.id === predId);
+                    // İki düğüm de kritikse ve gecikme yoksa ok KIRMIZI olur (Kritik Yol)
+                    let isCriticalEdge = task.isCritical && predNode.isCritical && (task.es === predNode.ef);
+                    
+                    edgesArray.push({
+                        from: predId,
+                        to: task.id,
+                        color: { color: isCriticalEdge ? '#ef4444' : '#94a3b8' },
+                        width: isCriticalEdge ? 3 : 1,
+                        arrows: 'to'
+                    });
+                });
+            });
+
+            const container = document.getElementById('network-canvas');
+            const data = { nodes: new vis.DataSet(nodesArray), edges: new vis.DataSet(edgesArray) };
+            const options = {
+                layout: { hierarchical: { direction: 'LR', sortMethod: 'directed', levelSeparation: 100 } },
+                physics: false,
+                interaction: { dragNodes: true, dragView: true, zoomView: true }
+            };
+
+            new vis.Network(container, data, options);
+        }
+
+        // --- ANA ÇALIŞTIRICI ---
         function processCPM() {
             const rows = document.querySelectorAll('.task-row');
             let activities = [];
@@ -328,27 +369,21 @@
                     let predStr = row.querySelector('.task-pred').value;
 
                     if (!id) throw new Error("Aktivite ID'leri boş bırakılamaz.");
-                    if (!durStr || isNaN(durStr) || Number(durStr) < 0) throw new Error(`'${id}' için geçerli bir süre girin.`);
-
                     let duration = Number(durStr);
                     let predecessors = predStr ? predStr.split(',').map(s => s.trim().toUpperCase()).filter(s => s !== "") : [];
-
-                    // ID Çakışması Kontrolü
-                    if (activities.some(a => a.id === id)) throw new Error(`'${id}' ID'si birden fazla kez kullanılmış.`);
 
                     activities.push({ id, duration, predecessors });
                 });
 
-                if (activities.length === 0) throw new Error("Lütfen en az bir aktivite ekleyin.");
-
                 // Algoritmayı Çalıştır
                 const result = calculateCPM(activities);
 
-                // --- UI GÜNCELLEMESİ ---
+                // Grafiği Çiz
+                drawNetworkGraph(result.detailedNodes);
+
+                // Arayüzü Güncelle
                 document.getElementById('result-panel').style.display = 'flex';
                 document.getElementById('res-duration').innerText = result.totalDuration;
-                
-                // Kritik yolu oklarla (A -> C -> D) formatında göster
                 document.getElementById('res-path').innerHTML = result.criticalPath.join(' <span><i class="fa-solid fa-arrow-right-long"></i></span> ');
 
                 const tbody = document.getElementById('table-body');
