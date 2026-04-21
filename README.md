@@ -34,3 +34,9 @@ The project runs 100% "Client-Side". No server installation or backend configura
 1. Clone the repository to your local machine:
    ```bash
    git clone [https://github.com/onurfgg/BU_KISMA_REPO_ADINI_YAZ.git](https://github.com/onurfgg/BU_KISMA_REPO_ADINI_YAZ.git)
+
+
+Onur Furkan Gök
+
+[Linkedin](https://www.linkedin.com/in/onurfurkan/) 
+[GitHub](https://github.com/onurfgg) 
